@@ -20,6 +20,15 @@ export type NewsItem = {
 	reason?: string;
 };
 
+export async function fetchNews(): Promise<NewsItem[]> {
+	// Simulate latency for UX testing
+	await new Promise((r) => setTimeout(r, 200));
+	const data = await fetch('http://127.0.0.1:8000/')
+	const posts = await data.json()
+	console.log(posts)
+	return posts;
+}
+
 export const mockNews: NewsItem[] = [
 	{
 		ticker: "NVDA",

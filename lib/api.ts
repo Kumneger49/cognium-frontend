@@ -29,7 +29,12 @@ import { mockNews, type NewsItem } from "../data/mockNews";
 export async function fetchNews(): Promise<NewsItem[]> {
 	// Simulate latency for UX testing
 	await new Promise((r) => setTimeout(r, 200));
-	return mockNews;
+	const res = await fetch('http://127.0.0.1:8000/')
+	const json = await res.json()
+	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as any[]
+	const mapped = rawItems.map(mapBackendToNewsItem)
+	console.log("fetchNews: received", Array.isArray(rawItems) ? rawItems.length : 0, "items; mapped", mapped.length)
+	return mapped;
 }
 
 // export async function fetchNews(): Promise<NewsItem[]> {
@@ -71,10 +76,10 @@ export function mapBackendToNewsItem(input: any): NewsItem {
 	return {
 		ticker: input.ticker,
 		tag: input.tag,
-		title: input.title,
+		title: input.title ?? input.headline,
 		summary: input.summary,
 		link: input.link,
-		sentiment_score: Number(input.sentiment_score ?? 0),
+		sentiment_score: Number(input.sentiment_score ?? input.sentiment ?? 0),
 		relevance_score: input.relevance_score,
 		reason: input.reason,
 	};
