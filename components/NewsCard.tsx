@@ -91,6 +91,19 @@ export default function NewsCard({ news }: NewsCardProps) {
 				>
 					View Affected Clients
 				</button>
+				<button
+					onClick={() => {
+						const params = new URLSearchParams({
+							ticker: news.ticker,
+							headline: news.title,
+						});
+						window.open(`/impact-analysis?${params.toString()}`, "_blank", "noopener,noreferrer");
+					}}
+					className="rounded-md border border-white/10 px-4 py-2 text-sm text-neutral-200 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
+					aria-label="Open Impact Analysis in new tab"
+				>
+					Show Impact
+				</button>
 			</div>
 
 			<AnimatePresence initial={false}>
