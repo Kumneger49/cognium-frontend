@@ -3,7 +3,7 @@
 import React, { Fragment, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Listbox, Transition } from "@headlessui/react";
-import { ChevronDown, TrendingUp, ArrowUp } from "lucide-react";
+import { ChevronDown, TrendingUp, ArrowUp, Shield, Coins } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from "recharts";
 
 type KpiKey =
@@ -12,6 +12,101 @@ type KpiKey =
   | "analystUpgrade"
   | "dividendCut"
   | "targetPrice";
+
+// -----------------------------------------------------------------------------
+// Recommendations dataset (dummy for now). In production, fetch from backend
+// using the current ticker/headline context. Kept at module scope to avoid
+// re-creating on each render.
+// -----------------------------------------------------------------------------
+const RECOMMENDATIONS: Array<{
+  news: string;
+  client_name: string;
+  recommendation: string;
+  rate_of_return: string;
+  portfolio_risk: string;
+  bank_commissions: string;
+}> = [
+  {
+    "news": "Infosys Extends Strategic Collaboration with Sunrise to Accelerate IT Transformation and Power AI Future",
+    "client_name": "Joseph Wright",
+    "recommendation": "Given the expansion of Infosys' collaboration with Sunrise, Joseph should consider increasing his exposure to INFY.NS in his portfolio to capitalize on potential growth from this partnership. This move could maximize his return while aligning with his long-term investment goals.",
+    "rate_of_return": "Expected return may increase by 5–7% due to Infosys's strengthened market position.",
+    "portfolio_risk": "Volatility risk may decline by around 10% as the collaboration enhances Infosys's stability.",
+    "bank_commissions": "Estimated commission growth of 2% from increased trading related to Infosys shares."
+},
+{
+    "news": "Infosys Extends Strategic Collaboration with Sunrise to Accelerate IT Transformation and Power AI Future",
+    "client_name": "Whitney Hicks",
+    "recommendation": "Whitney should diversify her portfolio by adding INFY.NS following this strategic move, forecasting higher returns from an expanding tech landscape. This tactic will help mitigate potential risks linked to her current tech-heavy investments.",
+    "rate_of_return": "Expected return may rise by around 4–6% reflecting the solid partnership development.",
+    "portfolio_risk": "Volatility risk could decrease by approximately 8% as Infosys strengthens its market foothold through collaboration.",
+    "bank_commissions": "Estimated commission growth of 1.5% from additional advisory fees related to INFY.NS investments."
+},
+{
+    "news": "Toyota Motor Corporation (TM) Sees a More Significant Dip Than Broader Market: Some Facts to Know",
+    "client_name": "Bryan",
+    "recommendation": "Bryan should consider reallocating some positions away from TM in light of this news to reduce exposure to potential losses while optimizing for better-performing assets. This strategy not only minimizes risk but may also safeguard returns as TM faces short-term challenges.",
+    "rate_of_return": "Expected returns may stabilize, with a reduction of potential decline by 3–4% as alternative investments outperform Toyota.",
+    "portfolio_risk": "Overall portfolio risk could reduce by up to 7% by limiting high-exposure stocks during a downturn.",
+    "bank_commissions": "A possible increase in commission of about 1% could come from trade adjustments and reallocation actions."
+},
+{
+    "news": "Toyota Motor Corporation (TM) Sees a More Significant Dip Than Broader Market: Some Facts to Know",
+    "client_name": "Lisa Smith",
+    "recommendation": "Lisa might need to reassess her stake in TM based on this recent dip while seeking positions in more resilient sectors or emerging markets. This proactive approach aligns with her objective to maintain steady returns while minimizing exposure to riskier equities.",
+    "rate_of_return": "Potential returns may drop by about 3% if selling TM now but could rebalance gains in more stable sectors.",
+    "portfolio_risk": "Risk exposure should decrease by around 5% as she reduces a significantly underperforming holding.",
+    "bank_commissions": "Estimated commission from adjusting her portfolio may yield around 2% due to higher trade frequency."
+},
+{
+    "news": "Mutuum Finance (MUTM) Approaches Next Phase With 14.3% Price Increase After Raising $16 Million",
+    "client_name": "Jill Rhodes",
+    "recommendation": "Although this news primarily impacts a different sector, Jill should monitor similar investment vehicles as they may influence overall market dynamics tied to her strategies. Maintaining diversification across sectors can provide enhanced returns amidst shifting trends.",
+    "rate_of_return": "Overall returns from alternative investment strategies may rise by around 2–3% as market segments react positively.",
+    "portfolio_risk": "Risk can remain stable as Jill balances her investments across various asset classes.",
+    "bank_commissions": "Commission potential remains stable at approximately 0% due to minimal direct actions required."
+},
+{
+    "news": "Charting What’s Next as SPY Tests Our Top Technical Analyst’s V-Shaped Recovery Target",
+    "client_name": "Jeffrey Lawrence",
+    "recommendation": "With SPY expected to recover, Jeffrey should reinforce his holdings in SPY for maximizing returns aligned with technical indicators reflecting market recovery. This enhances his likelihood of achieving quicker returns while diversifying his portfolio risk.",
+    "rate_of_return": "Potential return could increase by about 4–6% reflecting optimistic market sentiment.",
+    "portfolio_risk": "Risk levels may diminish by 3% if reinforced portfolio strategies include hedging alternatives.",
+    "bank_commissions": "Commission potential might rise by 2% as more trades are executed in line with anticipated market movements."
+},
+{
+    "news": "Gold Falls Off a Record on Profit Taking and Stronger Dollar",
+    "client_name": "Angela Cohen",
+    "recommendation": "Angela should consider strategically selling part of her GLD holdings to realize profits before a potential further decline, protecting her portfolio’s overall value while seeking alternative assets to invest in. This decision balances her returns while directly addressing the risk from the fluctuating gold market.",
+    "rate_of_return": "Realized returns from gold sales may increase short-term returns by 1-2% as she adjusts her strategy accordingly.",
+    "portfolio_risk": "Overall risk exposure could decrease by about 5% as assets are balanced with more stable investments.",
+    "bank_commissions": "Anticipated commissions may grow by 3% based on engagement in adjusting gold allocations."
+},
+{
+    "news": "Gold Falls Off a Record on Profit Taking and Stronger Dollar",
+    "client_name": "Michelle Wright",
+    "recommendation": "With the recent decline in gold prices, Michelle should reassess her exposure to GLD and potentially reallocate into more promising securities to reduce losses while maintaining portfolio value. This move could help stabilize her returns amidst gold volatility.",
+    "rate_of_return": "Expected return on her remaining investments might stabilize, increasing by about 1-2% as she diversifies.",
+    "portfolio_risk": "Her volatility risk may decline by 6% as she reallocates from higher-risk gold exposure.",
+    "bank_commissions": "Estimated commission growth could hit about 1% from portfolio rebalancing actions."
+},
+{
+    "news": "Siemens' AI and Robotics Push Could Be a Game Changer for Siemens (XTRA:SIE)",
+    "client_name": "Joseph Wright",
+    "recommendation": "Joseph should consider increasing his exposure to Siemens as this innovation positions the company for future profitability, presenting an excellent opportunity to maximize returns. This strategic adjustment offers a clear alignment with both growth prospects and reduced instability.",
+    "rate_of_return": "Expected returns could increase by about 3-5% as technological advancements improve Siemens' market performance.",
+    "portfolio_risk": "Portfolio risk may decrease by approximately 4% as advancements in technology bolster long-term value.",
+    "bank_commissions": "Expected commission growth should reach about 2% driven by increased trading volume in Siemens shares."
+},
+{
+    "news": "Siemens' AI and Robotics Push Could Be a Game Changer for Siemens (XTRA:SIE)",
+    "client_name": "Jill Rhodes",
+    "recommendation": "Jill should capitalize on Siemens' push into AI and robotics by diversifying into SIE, which presents growth opportunities likely to enhance her portfolio’s ROI. By investing in innovators, she reduces risk through strategic allocation across industries.",
+    "rate_of_return": "Her expected returns from this sector could improve by around 3-5% with the expected growth trajectory of Siemens.",
+    "portfolio_risk": "Volatility risk may decline by about 2% as she mitigates single-industry reliance.",
+    "bank_commissions": "This investment movement might yield approximately 1.5% in commission growth for the bank."
+}
+];
 
 type FeatureRow = {
   title: string;
@@ -481,6 +576,10 @@ export default function ImpactAnalysisPage() {
   // Expanded rows state keyed by title
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // Active tab state: "impact" (default) or "recs" (Recommendations for Affected Clients)
+  // In a future iteration, this could be synced to the URL (query/hash) for deep links
+  const [activeTab, setActiveTab] = useState<"impact" | "recs">("impact");
+
   const rows = useMemo(() => DUMMY_DATA[selectedKpi], [selectedKpi]);
 
   // Bar width scaling: simple linear mapping where max 2.5% => full width
@@ -489,6 +588,23 @@ export default function ImpactAnalysisPage() {
 
   const kpiLabel = KPI_OPTIONS.find((k) => k.key === selectedKpi)?.label || "KPI";
   const selectedOption = KPI_OPTIONS.find((k) => k.key === selectedKpi)!;
+
+  // ---------------------------------------------------------------------------
+  // Filter recommendations using current context:
+  // - If recommendation.news text includes the current headline (case-insensitive), include it
+  // - Or if the news/recommendation mentions the current ticker (word boundary match), include it
+  // This is a placeholder heuristic until backend filtering is available.
+  // ---------------------------------------------------------------------------
+  const filteredRecommendations = useMemo(() => {
+    const lowerHeadline = (headline || "").toLowerCase();
+    const tickerPattern = ticker ? new RegExp(`(\\b|\\W)${ticker}(\\b|\\W)`, "i") : null;
+    return RECOMMENDATIONS.filter((r) => {
+      const newsMatch = r.news.toLowerCase().includes(lowerHeadline);
+      const tickerInNews = tickerPattern ? tickerPattern.test(r.news) : false;
+      const tickerInRec = tickerPattern ? tickerPattern.test(r.recommendation) : false;
+      return newsMatch || tickerInNews || tickerInRec;
+    });
+  }, [headline, ticker]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 text-neutral-200">
@@ -537,10 +653,42 @@ export default function ImpactAnalysisPage() {
 
         {/* Context headline (optional) */}
         <p className="mt-3 text-xs text-neutral-400">Headline: {headline}</p>
+
+        {/* ------------------------------------------------------------------- */}
+        {/* Tabs: Impact Analysis | Recommendations for Affected Clients         */}
+        {/* Minimal visual style: bottom border with active underline highlight   */}
+        {/* ------------------------------------------------------------------- */}
+        <div className="mt-6 border-b border-white/10 flex items-center gap-6 text-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab("impact")}
+            className={`-mb-px pb-2 transition-colors ${
+              activeTab === "impact"
+                ? "text-neutral-50 border-b-2 border-emerald-400"
+                : "text-neutral-400 hover:text-neutral-200"
+            }`}
+            aria-current={activeTab === "impact" ? "page" : undefined}
+          >
+            Impact Analysis
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("recs")}
+            className={`-mb-px pb-2 transition-colors ${
+              activeTab === "recs"
+                ? "text-neutral-50 border-b-2 border-emerald-400"
+                : "text-neutral-400 hover:text-neutral-200"
+            }`}
+            aria-current={activeTab === "recs" ? "page" : undefined}
+          >
+            Recommendations for Affected Clients
+          </button>
+        </div>
       </header>
 
-      {/* Main Impact Chart Section */}
-      <section className="rounded-xl border border-white/10 bg-neutral-900/70 p-4 sm:p-6 shadow-sm">
+      {/* Tab: Impact Analysis (default) */}
+      {activeTab === "impact" && (
+        <section className="rounded-xl border border-white/10 bg-neutral-900/70 p-4 sm:p-6 shadow-sm">
         {/* Table header */}
         <div className="grid grid-cols-3 items-center gap-4 border-b border-white/10 pb-3 text-xs uppercase tracking-wide text-neutral-400">
           <div className="text-left">Negative Impact on KPI</div>
@@ -633,11 +781,77 @@ export default function ImpactAnalysisPage() {
             );
           })}
         </div>
-      </section>
+        </section>
+      )}
 
-      {/* Analysts' Insights & Forecasts Section */}
-      <section className="mt-6">
-        <h2 className="text-xl font-semibold text-neutral-50 mb-4">Analysts' Insights & Forecasts</h2>
+      {/* Tab: Recommendations for Affected Clients */}
+      {activeTab === "recs" && (
+        <section className="rounded-xl border border-white/10 bg-neutral-900/70 p-4 sm:p-6 shadow-sm">
+          {/* Header for recommendations feed */}
+          <h2 className="text-lg sm:text-xl font-semibold text-neutral-50 mb-4">
+            Recommendations for Affected Clients
+          </h2>
+          {/* Note: In production, this list will be server-fetched using ticker/headline */}
+          <div className="space-y-6">
+            {filteredRecommendations.length === 0 && (
+              <div className="text-sm text-neutral-400">
+                No recommendations match the current context.
+              </div>
+            )}
+            {filteredRecommendations.map((rec, idx) => (
+              <article key={idx} className="bg-gradient-to-b from-gray-900 to-gray-950 shadow-md p-6 rounded-2xl border border-white/10">
+                {/* Card header: Client + News */}
+                <div className="mb-2">
+                  <div className="text-white font-semibold text-lg">{rec.client_name}</div>
+                  <div className="text-gray-400 italic text-sm mb-2">{rec.news}</div>
+                </div>
+                {/* Main recommendation paragraph */}
+                <p className="text-sm text-neutral-200 leading-relaxed mb-4">
+                  {rec.recommendation}
+                </p>
+                {/* Details grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-xl p-4 text-gray-200 border-l-4 border-green-400 bg-green-950/30">
+                    <div className="font-semibold text-sm mb-1 tracking-wide text-green-400">
+                      <TrendingUp className="w-4 h-4 inline mr-1 align-text-bottom" />
+                      Rate of Return
+                    </div>
+                    <div className="text-sm text-neutral-200">{rec.rate_of_return}</div>
+                  </div>
+                  <div className="rounded-xl p-4 text-gray-200 border-l-4 border-yellow-400 bg-yellow-950/30">
+                    <div className="font-semibold text-sm mb-1 tracking-wide text-yellow-400">
+                      <Shield className="w-4 h-4 inline mr-1 align-text-bottom" />
+                      Portfolio Risk
+                    </div>
+                    <div className="text-sm text-neutral-200">{rec.portfolio_risk}</div>
+                  </div>
+                  <div className="rounded-xl p-4 text-gray-200 border-l-4 border-blue-400 bg-blue-950/30">
+                    <div className="font-semibold text-sm mb-1 tracking-wide text-blue-400">
+                      <Coins className="w-4 h-4 inline mr-1 align-text-bottom" />
+                      Earnings
+                    </div>
+                    <div className="text-sm text-neutral-200">{rec.bank_commissions}</div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          {/* Dummy CTA button for future report generation */}
+          <div className="mt-6">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/10 px-4 py-2 text-sm text-neutral-100 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/20"
+            >
+              Generate Full Report
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Analysts' Insights & Forecasts Section (kept visible under Impact tab) */}
+      {activeTab === "impact" && (
+        <section className="mt-6">
+          <h2 className="text-xl font-semibold text-neutral-50 mb-4">Analysts' Insights & Forecasts</h2>
         
         {/* Three-column responsive grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -755,7 +969,8 @@ export default function ImpactAnalysisPage() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

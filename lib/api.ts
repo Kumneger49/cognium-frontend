@@ -61,9 +61,9 @@ export async function fetchClientsForTicker(
 ): Promise<Array<{ name: string; impact: string }>> {
 	await new Promise((r) => setTimeout(r, 150));
 	const generic = [
-		{ name: "Acme Capital", impact: `Review positioning related to ${ticker}.` },
-		{ name: "Northbridge Wealth", impact: `Client books show exposure to ${ticker}.` },
-		{ name: "Riverstone Advisors", impact: `Run scenario analysis for ${ticker}.` },
+		{ name: "Joseph Wright", impact: "Show Impact for details." },
+		{ name: "Whitney Hicks", impact: "Show Impact for details." },
+		{ name: "Riverstone Advisors", impact: "Show Impact for details." },
 	];
 	return generic;
 }
