@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment, useMemo, useState, useEffect } from "react";
+import React, { Fragment, useMemo, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Listbox, Transition } from "@headlessui/react";
 import { ChevronDown, TrendingUp, ArrowUp, Shield, Coins } from "lucide-react";
@@ -475,7 +475,7 @@ const FORECAST_DATA = [
   { month: "Oct", rating: 3.8 }
 ];
 
-export default function ImpactAnalysisPage() {
+function ImpactAnalysisContent() {
   // Read ticker/headline from URL params; fallback to dummy
   const params = useSearchParams();
   const ticker = params.get("ticker") || "NVDA";
@@ -903,6 +903,20 @@ export default function ImpactAnalysisPage() {
         </section>
       )}
     </div>
+  );
+}
+
+export default function ImpactAnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-6xl px-4 py-8 text-neutral-200">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-neutral-400">Loading impact analysis...</div>
+        </div>
+      </div>
+    }>
+      <ImpactAnalysisContent />
+    </Suspense>
   );
 }
 
