@@ -3,6 +3,9 @@ import { mockNews, type NewsItem } from "../data/mockNews";
 // API utilities used by the UI. These are purposely simple and fully typed.
 // TODO: BACKEND — Replace the mock implementations below with real fetch calls.
 
+// Get the backend API URL from environment variables
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 /**
  * fetchNews
  * Returns a list of news items. Currently returns mock data.
@@ -29,7 +32,7 @@ import { mockNews, type NewsItem } from "../data/mockNews";
 export async function fetchNews(): Promise<NewsItem[]> {
 	// Simulate latency for UX testing
 	await new Promise((r) => setTimeout(r, 200));
-	const res = await fetch('http://127.0.0.1:8000/')
+	const res = await fetch(`${API_URL}/`)
 	const json = await res.json()
 	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as any[]
 	const mapped = rawItems.map(mapBackendToNewsItem)
@@ -70,7 +73,7 @@ export async function fetchClientsForTicker(
 	headline?: string
 ): Promise<Array<{ name: string; impact: string }>> {
 	// Fetch all recommendations from backend
-	const res = await fetch('http://127.0.0.1:8000/recommendations')
+	const res = await fetch(`${API_URL}/recommendations`)
 	const json = await res.json()
 	const allRecommendations = (json?.message?.data ?? json?.data ?? json ?? []) as Recommendation[]
 
@@ -121,7 +124,7 @@ export async function fetchClientsForTicker(
 export async function fetchRecommendations(): Promise<Recommendation[]> {
 	// Simulate latency for UX testing
 	await new Promise((r) => setTimeout(r, 200));
-	const res = await fetch('http://127.0.0.1:8000/recommendations')
+	const res = await fetch(`${API_URL}/recommendations`)
 	const json = await res.json()
 	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as Recommendation[]
 	console.log("fetchRecommendations: received", Array.isArray(rawItems) ? rawItems.length : 0, "items")
