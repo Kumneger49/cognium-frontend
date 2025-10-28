@@ -847,7 +847,7 @@ export default function ImpactAnalysisPage() {
                     </span>
                   </div>
                   <p className="text-xs text-neutral-200 leading-relaxed">
-                    "{comment.comment}"
+                    &ldquo;{comment.comment}&rdquo;
                   </p>
                 </div>
               ))}

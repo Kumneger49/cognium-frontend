@@ -1,4 +1,4 @@
-import { mockNews, type NewsItem } from "../data/mockNews";
+import { type NewsItem } from "../data/mockNews";
 
 // API utilities used by the UI. These are purposely simple and fully typed.
 // TODO: BACKEND — Replace the mock implementations below with real fetch calls.
@@ -34,8 +34,8 @@ export async function fetchNews(): Promise<NewsItem[]> {
 	await new Promise((r) => setTimeout(r, 200));
 	const res = await fetch(`${API_URL}/`)
 	const json = await res.json()
-	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as any[]
-	const mapped = rawItems.map(mapBackendToNewsItem)
+	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as unknown[]
+	const mapped = rawItems.map((item) => mapBackendToNewsItem(item as Record<string, unknown>))
 	console.log("fetchNews: received", Array.isArray(rawItems) ? rawItems.length : 0, "items; mapped", mapped.length)
 	return mapped;
 }
@@ -135,16 +135,16 @@ export async function fetchRecommendations(): Promise<Recommendation[]> {
  * Example mapping util if backend field names differ.
  * Adjust and use inside fetchNews() when integrating.
  */
-export function mapBackendToNewsItem(input: any): NewsItem {
+export function mapBackendToNewsItem(input: Record<string, unknown>): NewsItem {
 	return {
-		ticker: input.ticker,
-		tag: input.tag,
-		title: input.title ?? input.headline,
-		summary: input.summary,
-		link: input.link,
+		ticker: String(input.ticker || ''),
+		tag: String(input.tag || ''),
+		title: String(input.title ?? input.headline ?? ''),
+		summary: String(input.summary || ''),
+		link: String(input.link || ''),
 		sentiment_score: Number(input.sentiment_score ?? input.sentiment ?? 0),
-		relevance_score: input.relevance_score,
-		reason: input.reason,
+		relevance_score: input.relevance_score ? Number(input.relevance_score) : undefined,
+		reason: input.reason ? String(input.reason) : undefined,
 	};
 }
 

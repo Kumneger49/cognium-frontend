@@ -28,10 +28,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Filters, { type FiltersState } from "../components/Filters";
 import NewsCard from "../components/NewsCard";
-import { fetchNews } from "../lib/api";
+import { fetchNews, type NewsItem } from "../lib/api";
 
 export default function Home() {
-  const [news, setNews] = useState<any[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [filters, setFilters] = useState<FiltersState>({ positive: false, negative: false, tag: "All" });
 
   useEffect(() => {

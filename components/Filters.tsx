@@ -76,7 +76,7 @@ function Toggle({ label, checked, onChange, color }: { label: string; checked: b
 	);
 }
 
-function TagDropdown({ options, value, onChange }: { options: string[]; value: string; onChange: (v: any) => void }) {
+function TagDropdown({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
 	return (
 		<Listbox value={value} onChange={onChange}>
 			<div className="relative">
