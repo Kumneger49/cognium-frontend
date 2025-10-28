@@ -1,4 +1,5 @@
 import { type NewsItem } from "../data/mockNews";
+export type { NewsItem } from "../data/mockNews";
 
 // API utilities used by the UI. These are purposely simple and fully typed.
 // TODO: BACKEND — Replace the mock implementations below with real fetch calls.
