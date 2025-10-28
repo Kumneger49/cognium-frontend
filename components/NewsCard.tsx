@@ -46,7 +46,7 @@ export default function NewsCard({ news }: NewsCardProps) {
 	async function handleShowClients() {
 		setShowClients((v) => !v);
 		if (!clients) {
-			const data = await fetchClientsForTicker(news.ticker);
+			const data = await fetchClientsForTicker(news.ticker, news.title);
 			setClients(data);
 		}
 	}

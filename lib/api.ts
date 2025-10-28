@@ -45,27 +45,87 @@ export async function fetchNews(): Promise<NewsItem[]> {
   
 
 /**
+ * Recommendation type from backend
+ */
+export type Recommendation = {
+	news: string;
+	client_name: string;
+	recommendation: string;
+	rate_of_return: string;
+	portfolio_risk: string;
+	bank_commissions: string;
+};
+
+/**
  * fetchClientsForTicker
- * Given a ticker (or any key your backend uses), returns a list of clients
- * likely affected by the story. I return mock data for demo purposes.
- *
- * TODO: BACKEND — Swap with a real call, for example:
- *   return fetch(`/api/clients?ticker=${ticker}`)
- *     .then((res) => res.json());
- *
- * Expected JSON example:
- *   [ { "name": "Acme Capital", "impact": "High exposure via NVDA overweight." }, ... ]
+ * Given a ticker and optionally a headline, returns a list of clients
+ * likely affected by the story based on recommendations data.
+ * 
+ * Filters recommendations by:
+ * - If the news text includes the ticker (word boundary match)
+ * - If the recommendation mentions the ticker
  */
 export async function fetchClientsForTicker(
-	ticker: string
+	ticker: string,
+	headline?: string
 ): Promise<Array<{ name: string; impact: string }>> {
-	await new Promise((r) => setTimeout(r, 150));
-	const generic = [
-		{ name: "Joseph Wright", impact: "Show Impact for details." },
-		{ name: "Whitney Hicks", impact: "Show Impact for details." },
-		{ name: "Riverstone Advisors", impact: "Show Impact for details." },
-	];
-	return generic;
+	// Fetch all recommendations from backend
+	const res = await fetch('http://127.0.0.1:8000/recommendations')
+	const json = await res.json()
+	const allRecommendations = (json?.message?.data ?? json?.data ?? json ?? []) as Recommendation[]
+
+	if (allRecommendations.length === 0) {
+		return [];
+	}
+
+	// Filter recommendations that mention the ticker or headline
+	const tickerPattern = ticker ? new RegExp(`(\\b|\\W)${ticker}(\\b|\\W)`, "i") : null;
+	const lowerHeadline = (headline || "").toLowerCase();
+
+	const relevantRecommendations = allRecommendations.filter((rec) => {
+		const newsMatch = headline ? rec.news.toLowerCase().includes(lowerHeadline) : false;
+		const tickerInNews = tickerPattern ? tickerPattern.test(rec.news) : false;
+		const tickerInRec = tickerPattern ? tickerPattern.test(rec.recommendation) : false;
+		return newsMatch || tickerInNews || tickerInRec;
+	});
+
+	// Create a map to get unique clients with their recommendations
+	const clientMap = new Map<string, Recommendation[]>();
+	for (const rec of relevantRecommendations) {
+		if (!clientMap.has(rec.client_name)) {
+			clientMap.set(rec.client_name, []);
+		}
+		clientMap.get(rec.client_name)!.push(rec);
+	}
+
+	// Convert to array of ClientItem objects
+	const clients: Array<{ name: string; impact: string }> = [];
+	for (const [clientName, recs] of clientMap) {
+		// Use the first recommendation as the impact description
+		const firstRec = recs[0];
+		const impact = `${firstRec.news.substring(0, 80)}...`;
+		clients.push({
+			name: clientName,
+			impact
+		});
+	}
+
+	return clients;
+}
+
+/**
+ * fetchRecommendations
+ * Returns a list of all recommendations from the backend.
+ * Fetches from the /recommendations endpoint.
+ */
+export async function fetchRecommendations(): Promise<Recommendation[]> {
+	// Simulate latency for UX testing
+	await new Promise((r) => setTimeout(r, 200));
+	const res = await fetch('http://127.0.0.1:8000/recommendations')
+	const json = await res.json()
+	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as Recommendation[]
+	console.log("fetchRecommendations: received", Array.isArray(rawItems) ? rawItems.length : 0, "items")
+	return rawItems;
 }
 
 /**
