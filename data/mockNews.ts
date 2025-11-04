@@ -18,6 +18,8 @@ export type NewsItem = {
 	relevance_score?: number;
 	// New: short reason string
 	reason?: string;
+	// News source (e.g., "techcrunch.com", "bbc.com")
+	source: string;
 };
 
 export async function fetchNews(): Promise<NewsItem[]> {
@@ -41,6 +43,7 @@ export const mockNews: NewsItem[] = [
 		sentiment_score: 0.72,
 		relevance_score: 0.9,
 		reason: "Partnership expands AI capacity and demand visibility.",
+		source: "techcrunch.com",
 	},
 	{
 		ticker: "FED",
@@ -52,6 +55,7 @@ export const mockNews: NewsItem[] = [
 		sentiment_score: -0.41,
 		relevance_score: 0.8,
 		reason: "Tapering typically pressures bond prices and affects duration risk.",
+		source: "wsj.com",
 	},
 	{
 		ticker: "AAPL",
@@ -63,6 +67,7 @@ export const mockNews: NewsItem[] = [
 		sentiment_score: 0.35,
 		relevance_score: 0.7,
 		reason: "Developer interest and ecosystem growth potential.",
+		source: "techcrunch.com",
 	},
 	{
 		ticker: "XOM",
@@ -74,6 +79,7 @@ export const mockNews: NewsItem[] = [
 		sentiment_score: -0.3,
 		relevance_score: 0.6,
 		reason: "Inventory build weighs on margins and short-term outlook.",
+		source: "wsj.com",
 	},
 ];
 

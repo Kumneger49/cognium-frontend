@@ -146,6 +146,7 @@ export function mapBackendToNewsItem(input: Record<string, unknown>): NewsItem {
 		sentiment_score: Number(input.sentiment_score ?? input.sentiment ?? 0),
 		relevance_score: input.relevance_score ? Number(input.relevance_score) : undefined,
 		reason: input.reason ? String(input.reason) : undefined,
+		source: String(input.source || ''),
 	};
 }
 

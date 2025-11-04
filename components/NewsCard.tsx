@@ -17,6 +17,7 @@ export type NewsCardProps = {
 		sentiment_score: number;
 		relevance_score?: number;
 		reason?: string;
+		source: string;
 	};
 };
 
@@ -70,6 +71,9 @@ export default function NewsCard({ news }: NewsCardProps) {
 						</span>
 						<span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300">
 							{news.ticker}
+						</span>
+						<span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300">
+							{news.source}
 						</span>
 					</div>
 				</div>
