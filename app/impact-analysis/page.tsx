@@ -530,6 +530,10 @@ function ImpactAnalysisContent() {
     const lowerHeadline = (headline || "").toLowerCase();
     const tickerPattern = ticker ? new RegExp(`(\\b|\\W)${ticker}(\\b|\\W)`, "i") : null;
     return recommendations.filter((r) => {
+      // Check if ticker matches directly
+      if (r.ticker && r.ticker.toLowerCase() === ticker.toLowerCase()) {
+        return true;
+      }
       const newsMatch = r.news.toLowerCase().includes(lowerHeadline);
       const tickerInNews = tickerPattern ? tickerPattern.test(r.news) : false;
       const tickerInRec = tickerPattern ? tickerPattern.test(r.recommendation) : false;

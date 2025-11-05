@@ -38,7 +38,15 @@ export default function Home() {
     fetchNews().then(setNews);
   }, []);
 
-  const tags = useMemo(() => Array.from(new Set(news.map((n) => n.tag))), [news]);
+  // Extract unique tags from comma-separated tag strings
+  const tags = useMemo(() => {
+    const tagSet = new Set<string>();
+    news.forEach((n) => {
+      const tagList = n.tag.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      tagList.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [news]);
 
   const filtered = useMemo(() => {
     return news.filter((n) => {
@@ -48,7 +56,11 @@ export default function Home() {
       const wantsNegative = filters.negative && !filters.positive ? true : filters.positive && filters.negative ? undefined : filters.negative ? true : undefined;
       if (wantsPositive === true && score < 0) return false;
       if (wantsNegative === true && score >= 0) return false;
-      if (filters.tag !== "All" && n.tag !== filters.tag) return false;
+      // Check if any of the news item's tags match the selected filter
+      if (filters.tag !== "All") {
+        const newsTags = n.tag.split(',').map(t => t.trim());
+        if (!newsTags.includes(filters.tag)) return false;
+      }
       return true;
     });
   }, [news, filters]);

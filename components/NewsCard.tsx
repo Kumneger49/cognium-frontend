@@ -4,33 +4,27 @@ import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BadgeCheck } from "lucide-react";
 import clsx from "clsx";
-import ClientModal, { type ClientItem } from "./ClientModal";
 import { fetchClientsForTicker } from "../lib/api";
 
+import { type NewsItem } from "../lib/api";
+
+type ClientItem = { name: string; impact: string };
+
 export type NewsCardProps = {
-	news: {
-		ticker: string;
-		tag: string;
-		title: string;
-		summary: string;
-		link: string;
-		sentiment_score: number;
-		relevance_score?: number;
-		reason?: string;
-		source: string;
-	};
+	news: NewsItem;
 };
 
 /**
- * NewsCard renders a single news subcard. It supports two expandable sections:
+ * NewsCard renders a single news subcard. It supports expandable sections:
  * - Summary
- * - Affected Clients (with modal per client)
+ * - Affected Clients
+ * - Sources (when multiple sources are available)
  */
 export default function NewsCard({ news }: NewsCardProps) {
 	const [showSummary, setShowSummary] = useState(false);
 	const [showClients, setShowClients] = useState(false);
+	const [showSources, setShowSources] = useState(false);
 	const [clients, setClients] = useState<ClientItem[] | null>(null);
-	const [activeClient, setActiveClient] = useState<ClientItem | null>(null);
 
 	const isPositive = news.sentiment_score >= 0;
 	const pillClass = useMemo(
@@ -43,6 +37,27 @@ export default function NewsCard({ news }: NewsCardProps) {
 			),
 		[isPositive]
 	);
+
+	// Parse comma-separated tags
+	const tags = useMemo(() => {
+		return news.tag.split(',').map(t => t.trim()).filter(t => t.length > 0);
+	}, [news.tag]);
+
+	// Get sources, with fallback to legacy source/link
+	const sources = useMemo(() => {
+		if (news.sources && news.sources.length > 0) {
+			return news.sources;
+		}
+		// Fallback to legacy format
+		if (news.source && news.link) {
+			return [{
+				name: news.source,
+				title: news.title,
+				link: news.link,
+			}];
+		}
+		return [];
+	}, [news.sources, news.source, news.link, news.title]);
 
 	async function handleShowClients() {
 		setShowClients((v) => !v);
@@ -65,16 +80,38 @@ export default function NewsCard({ news }: NewsCardProps) {
 					<h3 className="text-sm sm:text-base font-medium text-neutral-100">
 						{news.title}
 					</h3>
-					<div className="mt-3 flex items-center gap-2">
-						<span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300">
-							{news.tag}
-						</span>
+					<div className="mt-3 flex flex-wrap items-center gap-2">
+						{tags.map((tag, idx) => (
+							<span key={idx} className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300">
+								{tag}
+							</span>
+						))}
 						<span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300">
 							{news.ticker}
 						</span>
-						<span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300">
-							{news.source}
-						</span>
+						{sources.length > 0 && (
+							<>
+								{sources.length === 1 ? (
+									<a
+										href={sources[0].link}
+										target="_blank"
+										rel="noreferrer"
+										className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300 hover:bg-white/10 cursor-pointer"
+										aria-label={`Read article from ${sources[0].name}`}
+									>
+										{sources[0].name}
+									</a>
+								) : (
+									<button
+										onClick={() => setShowSources((v) => !v)}
+										className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-neutral-300 hover:bg-white/10 cursor-pointer"
+										aria-label="Toggle sources"
+									>
+										Sources ({sources.length})
+									</button>
+								)}
+							</>
+						)}
 					</div>
 				</div>
 				<span className={pillClass} aria-label="Sentiment">
@@ -128,15 +165,22 @@ export default function NewsCard({ news }: NewsCardProps) {
 									Reason: <span className="text-neutral-100">{news.reason}</span>
 								</p>
 							)}
-							<a
-								href={news.link}
-								target="_blank"
-								rel="noreferrer"
-								className="mt-3 inline-flex items-center gap-1 text-emerald-300 hover:underline"
-								aria-label="Read original article in new tab"
-							>
-								<BadgeCheck className="h-4 w-4" /> Read Original
-							</a>
+							{sources.length > 0 && (
+								<div className="mt-3 space-y-2">
+									{sources.map((source, idx) => (
+										<a
+											key={idx}
+											href={source.link}
+											target="_blank"
+											rel="noreferrer"
+											className="block inline-flex items-center gap-1 text-emerald-300 hover:underline"
+											aria-label={`Read original article from ${source.name} in new tab`}
+										>
+											<BadgeCheck className="h-4 w-4" /> {source.title || source.name}
+										</a>
+									))}
+								</div>
+							)}
 						</div>
 					</motion.div>
 				)}
@@ -154,26 +198,51 @@ export default function NewsCard({ news }: NewsCardProps) {
 						<div className="p-4">
 						<div className="grid gap-2 sm:grid-cols-2">
 								{(clients ?? []).map((c) => (
-									<button
+									<div
 										key={c.name}
-										onClick={() => setActiveClient(c)}
-									className="rounded-md border border-white/10 bg-gradient-to-br from-sky-500/10 to-emerald-500/10 px-3 py-2 text-left text-sm text-neutral-100 hover:from-sky-500/20 hover:to-emerald-500/20"
+										className="rounded-md border border-white/10 bg-gradient-to-br from-sky-500/10 to-emerald-500/10 px-3 py-2 text-left text-sm text-neutral-100"
 									>
 										<div className="font-medium">{c.name}</div>
 										<div className="text-neutral-300 text-xs">{c.impact}</div>
-									</button>
+									</div>
 								))}
 							</div>
 						</div>
 					</motion.div>
 				)}
-			</AnimatePresence>
 
-			<ClientModal
-				isOpen={!!activeClient}
-				onClose={() => setActiveClient(null)}
-				client={activeClient}
-			/>
+				{showSources && sources.length > 0 && (
+					<motion.div
+						key="sources"
+						initial={{ height: 0, opacity: 0 }}
+						animate={{ height: "auto", opacity: 1 }}
+						exit={{ height: 0, opacity: 0 }}
+						transition={{ type: "tween", duration: 0.25 }}
+						className="mt-4 overflow-hidden rounded-md border border-white/10 bg-white/5"
+					>
+						<div className="border-b border-white/10" />
+						<div className="p-4 space-y-2">
+							{sources.map((source, idx) => (
+								<div key={idx} className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 p-3">
+									<div className="flex-1">
+										<div className="text-sm font-medium text-neutral-100">{source.title || source.name}</div>
+										<div className="text-xs text-neutral-400 mt-1">{source.name}</div>
+									</div>
+									<a
+										href={source.link}
+										target="_blank"
+										rel="noreferrer"
+										className="ml-3 inline-flex items-center gap-1 text-emerald-300 hover:underline text-sm"
+										aria-label={`Read article from ${source.name}`}
+									>
+										<BadgeCheck className="h-4 w-4" /> Read
+									</a>
+								</div>
+							))}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</motion.div>
 	);
 }

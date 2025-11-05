@@ -1,5 +1,5 @@
-import { type NewsItem } from "../data/mockNews";
-export type { NewsItem } from "../data/mockNews";
+import { type NewsItem, type NewsSource } from "../data/mockNews";
+export type { NewsItem, NewsSource } from "../data/mockNews";
 
 // API utilities used by the UI. These are purposely simple and fully typed.
 // TODO: BACKEND — Replace the mock implementations below with real fetch calls.
@@ -52,12 +52,21 @@ export async function fetchNews(): Promise<NewsItem[]> {
  * Recommendation type from backend
  */
 export type Recommendation = {
+	ticker: string;
 	news: string;
+	sources?: Array<{
+		name: string;
+		title: string;
+		link: string;
+		relevance_score?: number;
+		sentiment_score?: number;
+	}>;
 	client_name: string;
 	recommendation: string;
 	rate_of_return: string;
 	portfolio_risk: string;
 	bank_commissions: string;
+	tag?: string;
 };
 
 /**
@@ -87,6 +96,10 @@ export async function fetchClientsForTicker(
 	const lowerHeadline = (headline || "").toLowerCase();
 
 	const relevantRecommendations = allRecommendations.filter((rec) => {
+		// Check if ticker matches
+		if (rec.ticker && rec.ticker.toLowerCase() === ticker.toLowerCase()) {
+			return true;
+		}
 		const newsMatch = headline ? rec.news.toLowerCase().includes(lowerHeadline) : false;
 		const tickerInNews = tickerPattern ? tickerPattern.test(rec.news) : false;
 		const tickerInRec = tickerPattern ? tickerPattern.test(rec.recommendation) : false;
@@ -133,20 +146,35 @@ export async function fetchRecommendations(): Promise<Recommendation[]> {
 }
 
 /**
- * Example mapping util if backend field names differ.
- * Adjust and use inside fetchNews() when integrating.
+ * Map backend news item to frontend NewsItem format.
+ * Handles new format with multiple sources and tags.
  */
 export function mapBackendToNewsItem(input: Record<string, unknown>): NewsItem {
+	const sources = Array.isArray(input.sources) 
+		? (input.sources as Array<Record<string, unknown>>).map(s => ({
+			name: String(s.name || ''),
+			title: String(s.title || ''),
+			link: String(s.link || ''),
+			relevance_score: s.relevance_score ? Number(s.relevance_score) : undefined,
+			sentiment_score: s.sentiment_score ? Number(s.sentiment_score) : undefined,
+		}))
+		: [];
+
+	// For backward compatibility, use first source for legacy fields
+	const firstSource = sources[0];
+	
 	return {
 		ticker: String(input.ticker || ''),
 		tag: String(input.tag || ''),
 		title: String(input.title ?? input.headline ?? ''),
 		summary: String(input.summary || ''),
-		link: String(input.link || ''),
+		news: input.news ? String(input.news) : undefined,
+		sources: sources,
 		sentiment_score: Number(input.sentiment_score ?? input.sentiment ?? 0),
-		relevance_score: input.relevance_score ? Number(input.relevance_score) : undefined,
+		relevance_score: input.relevance_score ? Number(input.relevance_score) : firstSource?.relevance_score,
 		reason: input.reason ? String(input.reason) : undefined,
-		source: String(input.source || ''),
+		source: firstSource?.name || String(input.source || ''),
+		link: firstSource?.link || String(input.link || ''),
 	};
 }
 
