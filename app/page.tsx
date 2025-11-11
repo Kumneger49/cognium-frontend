@@ -1,42 +1,51 @@
 "use client";
 
-/**
- * README (quick start for developers)
- * 1. npx create-next-app@latest news-dashboard --use-npm --typescript
- * 2. cd news-dashboard
- * 3. npm install tailwindcss postcss autoprefixer @headlessui/react framer-motion lucide-react clsx react-modal
- *    npx tailwindcss init -p
- * 4. npm run dev → open http://localhost:3000
- *
- * Backend integration:
- * - Update `lib/api.ts#fetchNews` to call your endpoint and map fields.
- * - Expected JSON example:
- *   [
- *     {
- *       "ticker": "AAPL",
- *       "tag": "Tech",
- *       "title": "Apple announces new product",
- *       "summary": "Short summary text...",
- *       "link": "https://example.com/article",
- *       "sentiment_score": 0.4,
- *       "relevance_score": 0.8,
- *       "reason": "Short rationale"
- *     }
- *   ]
- */
-
 import { useEffect, useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import Filters, { type FiltersState } from "../components/Filters";
 import NewsCard from "../components/NewsCard";
-import { fetchNews, type NewsItem } from "../lib/api";
+import { fetchNews, regenerateRecommendations, type NewsItem } from "../lib/api";
 
 export default function Home() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [filters, setFilters] = useState<FiltersState>({ positive: false, negative: false, tag: "All" });
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+
+  const loadNews = async () => {
+    try {
+      const newsData = await fetchNews();
+      setNews(newsData);
+    } catch (error) {
+      console.error("Failed to load news:", error);
+    }
+  };
 
   useEffect(() => {
-    fetchNews().then(setNews);
+    loadNews();
   }, []);
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true);
+    setRegenerateError(null);
+    
+    try {
+      const result = await regenerateRecommendations();
+      
+      if (result.success) {
+        // Wait a moment for backend to process, then refresh news
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await loadNews();
+      } else {
+        setRegenerateError(result.message || "Failed to regenerate recommendations");
+      }
+    } catch (error) {
+      console.error("Regenerate error:", error);
+      setRegenerateError(error instanceof Error ? error.message : "An unexpected error occurred");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   // Extract unique tags from comma-separated tag strings
   const tags = useMemo(() => {
@@ -66,7 +75,7 @@ export default function Home() {
   }, [news, filters]);
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-neutral-100">
+    <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-neutral-100 relative">
       <div className="mx-auto max-w-3xl px-4 py-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-6">News Dashboard</h1>
 
@@ -82,6 +91,34 @@ export default function Home() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Regenerate News Button - Bottom Left */}
+      <div className="fixed bottom-6 left-6 z-10">
+        <button
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          className={`
+            flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm
+            transition-all duration-200 shadow-lg
+            ${isRegenerating
+              ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-emerald-500/50'
+            }
+          `}
+          title={isRegenerating ? "Regenerating news..." : "Regenerate news from backend"}
+        >
+          <RefreshCw 
+            className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} 
+          />
+          <span>{isRegenerating ? 'Regenerating...' : 'Regenerate News'}</span>
+        </button>
+        
+        {regenerateError && (
+          <div className="mt-2 px-3 py-2 bg-red-900/80 border border-red-700 rounded-lg text-red-200 text-xs max-w-xs">
+            {regenerateError}
+          </div>
+        )}
       </div>
     </div>
   );

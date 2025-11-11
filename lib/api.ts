@@ -2,51 +2,8 @@ import { type NewsItem, type NewsSource } from "../data/mockNews";
 export type { NewsItem, NewsSource } from "../data/mockNews";
 
 // API utilities used by the UI. These are purposely simple and fully typed.
-// TODO: BACKEND — Replace the mock implementations below with real fetch calls.
-
 // Get the backend API URL from environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-/**
- * fetchNews
- * Returns a list of news items. Currently returns mock data.
- *
- * TODO: BACKEND — Replace implementation with your endpoint, e.g.:
- *   return fetch('/api/news')
- *     .then((res) => res.json())
- *     .then((data: Array<YourBackendNewsShape>) => data.map(mapBackendToNewsItem));
- *
- * Expected backend JSON item shape example:
- * [
- *   {
- *     "ticker": "AAPL",
- *     "tag": "Tech",
- *     "title": "Apple announces new product",
- *     "summary": "Short summary text...",
- *     "link": "https://example.com/article",
- *     "sentiment_score": 0.42, // negative if < 0
- *     "relevance_score": 0.8,
- *     "reason": "Short explanation"
- *   }
- * ]
- */
-export async function fetchNews(): Promise<NewsItem[]> {
-	// Simulate latency for UX testing
-	await new Promise((r) => setTimeout(r, 200));
-	const res = await fetch(`${API_URL}/`)
-	const json = await res.json()
-	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as unknown[]
-	const mapped = rawItems.map((item) => mapBackendToNewsItem(item as Record<string, unknown>))
-	console.log("fetchNews: received", Array.isArray(rawItems) ? rawItems.length : 0, "items; mapped", mapped.length)
-	return mapped;
-}
-
-// export async function fetchNews(): Promise<NewsItem[]> {
-// 	const res = await fetch("https://your-backend-domain.com/api/news");
-// 	const data = await res.json();
-// 	return data.map(mapBackendToNewsItem);
-//   }
-  
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://165.232.190.9:8000';
 
 /**
  * Recommendation type from backend
@@ -70,6 +27,55 @@ export type Recommendation = {
 };
 
 /**
+ * fetchNews
+ * Returns a list of news items extracted from recommendations data.
+ * Uses the recommendations endpoint and converts recommendations to news items.
+ */
+export async function fetchNews(): Promise<NewsItem[]> {
+	// Simulate latency for UX testing
+	await new Promise((r) => setTimeout(r, 200));
+	
+	// Fetch recommendations and extract news items from them
+	const res = await fetch(`${API_URL}/api/recommendations`);
+	const json = await res.json();
+	const recommendations = (json?.data ?? []) as Recommendation[];
+	
+	// Convert recommendations to news items
+	// Each recommendation contains news information that can be displayed
+	const newsItems: NewsItem[] = recommendations.map((rec) => {
+		// Extract title from news field (first line is usually the topic)
+		const newsLines = rec.news.split('\n');
+		const topicLine = newsLines.find(line => line.startsWith('Topic:'));
+		const summaryLine = newsLines.find(line => line.startsWith('Summary:'));
+		
+		const title = topicLine ? topicLine.replace('Topic:', '').trim() : rec.news.substring(0, 100);
+		const summary = summaryLine ? summaryLine.replace('Summary:', '').trim() : rec.news;
+		
+		// Use first source for link and metadata, or create a default
+		const firstSource = rec.sources && rec.sources.length > 0 ? rec.sources[0] : null;
+		const sentimentScore = firstSource?.sentiment_score ?? 0;
+		const relevanceScore = firstSource?.relevance_score;
+		
+		return {
+			ticker: rec.ticker,
+			tag: rec.tag || '',
+			title: firstSource?.title || title,
+			summary: summary,
+			news: rec.news,
+			sources: rec.sources || [],
+			sentiment_score: sentimentScore,
+			relevance_score: relevanceScore,
+			link: firstSource?.link || '',
+			source: firstSource?.name || '',
+			reason: rec.recommendation,
+		};
+	});
+	
+	console.log("fetchNews: received", recommendations.length, "recommendations; converted to", newsItems.length, "news items");
+	return newsItems;
+}
+
+/**
  * fetchClientsForTicker
  * Given a ticker and optionally a headline, returns a list of clients
  * likely affected by the story based on recommendations data.
@@ -83,9 +89,9 @@ export async function fetchClientsForTicker(
 	headline?: string
 ): Promise<Array<{ name: string; impact: string }>> {
 	// Fetch all recommendations from backend
-	const res = await fetch(`${API_URL}/recommendations`)
+	const res = await fetch(`${API_URL}/api/recommendations`)
 	const json = await res.json()
-	const allRecommendations = (json?.message?.data ?? json?.data ?? json ?? []) as Recommendation[]
+	const allRecommendations = (json?.data ?? []) as Recommendation[]
 
 	if (allRecommendations.length === 0) {
 		return [];
@@ -133,16 +139,62 @@ export async function fetchClientsForTicker(
 /**
  * fetchRecommendations
  * Returns a list of all recommendations from the backend.
- * Fetches from the /recommendations endpoint.
+ * Fetches from the /api/recommendations endpoint.
  */
 export async function fetchRecommendations(): Promise<Recommendation[]> {
 	// Simulate latency for UX testing
 	await new Promise((r) => setTimeout(r, 200));
-	const res = await fetch(`${API_URL}/recommendations`)
+	const res = await fetch(`${API_URL}/api/recommendations`)
 	const json = await res.json()
-	const rawItems = (json?.message?.data ?? json?.data ?? json ?? []) as Recommendation[]
+	
+	// Handle the response structure: { status: "success", data: [...], count: number }
+	if (json.status === "success" && Array.isArray(json.data)) {
+		const rawItems = json.data as Recommendation[]
+		console.log("fetchRecommendations: received", rawItems.length, "items")
+		return rawItems;
+	}
+	
+	// Fallback for backward compatibility
+	const rawItems = (json?.data ?? []) as Recommendation[]
 	console.log("fetchRecommendations: received", Array.isArray(rawItems) ? rawItems.length : 0, "items")
 	return rawItems;
+}
+
+/**
+ * regenerateRecommendations
+ * Triggers regeneration of recommendations on the backend.
+ * This endpoint regenerates the news/recommendations data.
+ * Returns a success status when regeneration is complete.
+ */
+export async function regenerateRecommendations(): Promise<{ success: boolean; message?: string }> {
+	try {
+		const res = await fetch(`${API_URL}/api/regenerate-recommendations`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+		
+		if (!res.ok) {
+			throw new Error(`HTTP error! status: ${res.status}`);
+		}
+		
+		const json = await res.json();
+		
+		// Handle different response formats
+		if (json.status === "success" || res.ok) {
+			console.log("regenerateRecommendations: success");
+			return { success: true, message: json.message || "Recommendations regenerated successfully" };
+		}
+		
+		return { success: false, message: json.message || "Unknown error occurred" };
+	} catch (error) {
+		console.error("regenerateRecommendations: error", error);
+		return { 
+			success: false, 
+			message: error instanceof Error ? error.message : "Failed to regenerate recommendations" 
+		};
+	}
 }
 
 /**
@@ -177,5 +229,3 @@ export function mapBackendToNewsItem(input: Record<string, unknown>): NewsItem {
 		link: firstSource?.link || String(input.link || ''),
 	};
 }
-
-

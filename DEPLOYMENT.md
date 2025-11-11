@@ -5,9 +5,19 @@ This guide provides detailed step-by-step instructions for deploying the Cognium
 ## Prerequisites
 
 - Your frontend repository is pushed to GitHub
-- Your backend is already deployed on Render
+- Your backend is already deployed and accessible at `http://165.232.190.9:8000`
 - You have a GitHub account
 - You have a Vercel account (or can create one for free)
+
+## Important Notes
+
+- The backend API is located at: `http://165.232.190.9:8000`
+- Main endpoints:
+  - `GET /api/recommendations` - Fetches all recommendations/news
+  - `POST /api/regenerate-recommendations` - Regenerates recommendations/news data
+- The backend must have CORS configured to allow requests from your Vercel domain
+- Since the backend uses HTTP (not HTTPS), ensure CORS is properly configured on the backend
+- The regenerate endpoint requires POST method, so CORS must allow POST requests
 
 ## Step 1: Prepare Your Repository
 
@@ -24,9 +34,9 @@ git push origin main
 
 ### 1.2 Note Your Backend URL
 
-Make sure you have your Render backend URL ready. It should look like:
-- `https://your-backend-name.onrender.com`
-- Example: `https://backend-dxg7.onrender.com`
+The backend API URL is:
+- `http://165.232.190.9:8000`
+- Main endpoint: `http://165.232.190.9:8000/api/recommendations`
 
 ## Step 2: Create a Vercel Account
 
@@ -83,15 +93,17 @@ Before clicking **Deploy**, configure the following:
 2. Click **Add** or the plus icon
 3. Add this variable:
    - **Key:** `NEXT_PUBLIC_API_URL`
-   - **Value:** `https://your-backend-name.onrender.com`
-     - Replace with your actual Render backend URL
+   - **Value:** `http://165.232.190.9:8000`
+     - This is the base URL of the containerized backend
    - **Environment:** Select all three (Production, Preview, Development)
 4. Click **Save**
 
 **Example:**
 ```
-NEXT_PUBLIC_API_URL=https://backend-dxg7.onrender.com
+NEXT_PUBLIC_API_URL=http://165.232.190.9:8000
 ```
+
+**Note:** The frontend will automatically append `/api/recommendations` to this URL when making API calls.
 
 ### 3.5 Deploy
 
@@ -112,28 +124,40 @@ NEXT_PUBLIC_API_URL=https://backend-dxg7.onrender.com
 1. Check that the homepage loads
 2. Navigate to the impact analysis page
 3. Verify that news data is loading from your backend
-4. Check the browser console for any errors
+4. Test the "Regenerate News" button (bottom left of dashboard):
+   - Click the button to trigger regeneration
+   - Wait for the process to complete
+   - Verify that news content refreshes after regeneration
+5. Check the browser console for any errors
 
 ## Step 5: Configure Backend CORS
 
 ### 5.1 Update Backend CORS Settings
 
-Now that your frontend is deployed, you need to tell your backend to allow requests from your Vercel domain.
+**CRITICAL:** Since your frontend will be deployed on Vercel (HTTPS) and your backend is on HTTP at `http://165.232.190.9:8000`, you need to ensure the backend has CORS properly configured.
 
-1. Go back to your Render backend dashboard
-2. Navigate to your backend service
-3. Go to **Environment** tab
-4. Update the `CORS_ALLOWED_ORIGINS` variable:
-   - Current value might be `*` or localhost
-   - Change to: `https://your-frontend.vercel.app`
+The backend engineer needs to configure CORS to allow requests from your Vercel domain:
+
+1. **Backend CORS Configuration Required:**
+   - The backend must allow requests from: `https://your-frontend.vercel.app`
    - Example: `https://cognium-frontend.vercel.app`
-5. Click **Save Changes**
-6. Wait for the backend to redeploy (automatic)
+   - CORS headers should include:
+     - `Access-Control-Allow-Origin: https://your-frontend.vercel.app`
+     - `Access-Control-Allow-Methods: GET, POST, OPTIONS` (POST is required for regenerate endpoint)
+     - `Access-Control-Allow-Headers: Content-Type`
+   - **Important:** The regenerate endpoint (`/api/regenerate-recommendations`) uses POST method, so CORS must explicitly allow POST requests
 
-**Optional:** If you want to allow both local development and production:
-```
-http://localhost:3000,https://cognium-frontend.vercel.app
-```
+2. **For Local Development:**
+   - If you want to allow both local development and production, configure CORS to allow:
+     - `http://localhost:3000` (local development)
+     - `https://your-frontend.vercel.app` (production)
+
+3. **Contact the Backend Engineer:**
+   - Provide them with your Vercel deployment URL after deployment
+   - Ask them to update the CORS configuration to include your Vercel domain
+   - The backend should allow requests from your specific Vercel URL
+
+**Important:** Since the backend uses HTTP and Vercel uses HTTPS, ensure the backend CORS configuration allows cross-origin requests from HTTPS domains.
 
 ## Step 6: Test Production Integration
 
@@ -147,9 +171,19 @@ http://localhost:3000,https://cognium-frontend.vercel.app
 ### 6.2 Common Issues and Solutions
 
 **Issue: "Failed to fetch" errors**
-- Check that `NEXT_PUBLIC_API_URL` is set correctly in Vercel
+- Check that `NEXT_PUBLIC_API_URL` is set correctly in Vercel (`http://165.232.190.9:8000`)
 - Verify backend CORS settings allow your Vercel domain
-- Check that backend is running on Render
+- Check that backend is accessible at `http://165.232.190.9:8000/api/recommendations`
+- Test the backend URL directly in a browser or with curl
+- Check browser console for CORS errors
+- **For regenerate button:** Ensure CORS allows POST requests (not just GET)
+
+**Issue: "Regenerate News" button not working**
+- Verify the backend endpoint `http://165.232.190.9:8000/api/regenerate-recommendations` is accessible
+- Check that CORS allows POST method for this endpoint
+- Test the endpoint directly with curl: `curl -X POST http://165.232.190.9:8000/api/regenerate-recommendations`
+- Check browser console for specific error messages
+- Verify the backend is responding with proper CORS headers for POST requests
 
 **Issue: Data not displaying**
 - Open browser DevTools (F12) → Network tab
@@ -158,7 +192,8 @@ http://localhost:3000,https://cognium-frontend.vercel.app
 
 **Issue: 404 errors**
 - Ensure your backend routes are accessible
-- Test backend URLs directly (e.g., `https://backend.onrender.com/`)
+- Test backend URL directly: `http://165.232.190.9:8000/api/recommendations`
+- Verify the response format matches expected structure: `{ status: "success", data: [...] }`
 
 ## Step 7: Custom Domain (Optional)
 
@@ -172,7 +207,7 @@ http://localhost:3000,https://cognium-frontend.vercel.app
 
 ### 7.2 Update Backend CORS
 
-Don't forget to add your custom domain to `CORS_ALLOWED_ORIGINS` in Render!
+Don't forget to ask the backend engineer to add your custom domain to the CORS allowed origins!
 
 ## Step 8: Automatic Deployments
 
@@ -227,7 +262,8 @@ If you encounter issues:
 1. Check Vercel documentation: https://vercel.com/docs
 2. Check Next.js deployment guide: https://nextjs.org/docs/deployment
 3. Check Vercel logs in the dashboard
-4. Check your backend Render logs
+4. Check backend accessibility at `http://165.232.190.9:8000/api/recommendations`
+5. Verify backend CORS configuration with backend engineer
 
 ---
 

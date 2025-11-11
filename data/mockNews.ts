@@ -1,5 +1,6 @@
-// Dummy news dataset used by the UI for development.
-// TODO: BACKEND — Replace this with your real backend data flow.
+// Type definitions and mock data for news items.
+// Note: The actual data fetching is handled in lib/api.ts which uses the main backend API.
+// This file is kept for type definitions and optional mock data for testing.
 
 export type NewsSource = {
 	name: string;
@@ -34,15 +35,8 @@ export type NewsItem = {
 	link?: string;
 };
 
-export async function fetchNews(): Promise<NewsItem[]> {
-	// Simulate latency for UX testing
-	await new Promise((r) => setTimeout(r, 200));
-	const data = await fetch('http://127.0.0.1:8000/')
-	const posts = await data.json()
-	console.log(posts)
-	return posts;
-}
-
+// Mock data array (kept for reference/testing purposes)
+// Note: The actual fetchNews function is now in lib/api.ts and uses the main backend API
 export const mockNews: NewsItem[] = [
 	{
 		ticker: "NVDA",
