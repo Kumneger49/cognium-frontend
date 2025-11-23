@@ -34,7 +34,7 @@ export async function fetchNews(): Promise<NewsItem[]> {
 	await new Promise((r) => setTimeout(r, 200));
 	
 	// Fetch recommendations and extract news items from them
-	const res = await fetch(`https://api.cognium.xyz/api/recommendations`);
+	const res = await fetch(`https://api.cognium.xyz/api/recommendations/client/client_123`);
 	const json = await res.json();
 	const recommendations = (json?.data ?? []) as Recommendation[];
 	
@@ -87,7 +87,7 @@ export async function fetchClientsForTicker(
 	headline?: string
 ): Promise<Array<{ name: string; impact: string }>> {
 	// Fetch all recommendations from backend
-	const res = await fetch(`https://api.cognium.xyz/api/recommendations`)
+	const res = await fetch(`https://api.cognium.xyz/api/recommendations/client/client_123`)
 	const json = await res.json()
 	const allRecommendations = (json?.data ?? []) as Recommendation[]
 
@@ -142,7 +142,7 @@ export async function fetchClientsForTicker(
 export async function fetchRecommendations(): Promise<Recommendation[]> {
 	// Simulate latency for UX testing
 	await new Promise((r) => setTimeout(r, 200));
-	const res = await fetch(`https://api.cognium.xyz/api/recommendations`)
+	const res = await fetch(`https://api.cognium.xyz/api/recommendations/client/client_123`)
 	const json = await res.json()
 	
 	// Handle the response structure: { status: "success", data: [...], count: number }
@@ -166,7 +166,7 @@ export async function fetchRecommendations(): Promise<Recommendation[]> {
  */
 export async function regenerateRecommendations(): Promise<{ success: boolean; message?: string }> {
 	try {
-		const res = await fetch(`https://api.cognium.xyz/api/regenerate-recommendations`, {
+		const res = await fetch(`https://api.cognium.xyz/api/regenerate-recommendations/client/client_123`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
